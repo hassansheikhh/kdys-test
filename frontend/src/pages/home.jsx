@@ -2,44 +2,56 @@ import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye } from '@fortawesome/free-solid-svg-icons';
 import 'bootstrap/dist/css/bootstrap.min.css';
-
 import '../assets/css/styles.css';
 import { useNavigate } from 'react-router-dom';
 
 function Home() {
   const navigate = useNavigate();
-
   const [biomarkers, setBiomarkers] = useState([]);
-  const [showModal, setShowModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState({
     biomarker: '',
     measurementUnit: '',
     categories: '',
   });
-  const [resultData, setResultData] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:3000/biomarkers')
+    fetch('http://localhost:3000/GetBiomarkers')
       .then(response => response.json())
       .then(data => setBiomarkers(data));
   }, []);
 
-  const handleShowTable = (masterId) => {
-    navigate(`/about/${masterId}`);
+  const handleShowTable = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:3000/GetBiomarkersById/${id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch biomarkers by ID');
+      }
+      const data = await response.json();
+      navigate('/contact', { state: { biomarkers: data } });
+    } catch (error) {
+      console.error('Error fetching biomarkers by ID:', error);
+    }
   };
 
-  const handleViewTable = (masterId) => {
-    navigate(`/contact/${masterId}`);
+  const handleViewTable = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:3000/GetBiomarkersById/${id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch biomarkers by ID');
+      }
+      const data = await response.json();
+      navigate('/about', { state: { biomarkers: data } });
+    } catch (error) {
+      console.error('Error fetching biomarkers by ID:', error);
+    }
   };
-
-
+  
   const handleShowAddModal = () => {
     setShowAddModal(true);
   };
 
   const handleCloseModal = () => {
-    setShowModal(false);
     setShowAddModal(false);
   };
 
@@ -52,7 +64,7 @@ function Home() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    fetch('http://localhost:3000/biomarkers', {
+    fetch('http://localhost:3000/AddBiomarkers', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,67 +108,15 @@ function Home() {
               <div className="col-sm-3">{biomarker.measurementUnit}</div>
               <div className="col-sm-2">{biomarker.categories}</div>
               <div className="col-sm-2 text-center eye-icon">
-                <FontAwesomeIcon icon={faEye} onClick={() => handleViewTable(biomarker.masterId)} className="text-secondary" />
+                <FontAwesomeIcon icon={faEye} onClick={() => handleViewTable(biomarker._id)} className="text-secondary" />
               </div>
               <div className="col-sm-2 text-center">
-                <button className="btn btn-success" onClick={() => handleShowTable(biomarker.masterId)}>Test</button>
+                <button className='btn btn-success' onClick={() => handleShowTable(biomarker._id)}>Test</button>
               </div>
             </div>
           ))}
         </div>
       </div>
-
-      {showModal && (
-        <div className="modal show" style={{ display: 'block' }} aria-modal="true" role="dialog">
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Biomarker Result</h5>
-                <button type="button" className="close" onClick={handleCloseModal}>
-                  <span>&times;</span>
-                </button>
-              </div>
-              <div className="modal-body">
-                {resultData && resultData.map((result, index) => (
-                  <form key={index}>
-                    <div className="form-group">
-                      <label>Date</label>
-                      <input type="date" className="form-control" value={new Date(result.date).toISOString().substr(0, 10)} readOnly />
-                    </div>
-                    <div className="form-group">
-                      <label>Ref Min</label>
-                      <input type="text" className="form-control" value={result.refMin} readOnly />
-                    </div>
-                    <div className="form-group">
-                      <label>Ref Max</label>
-                      <input type="text" className="form-control" value={result.refMax} readOnly />
-                    </div>
-                    <div className="form-group">
-                      <label>Opt Min</label>
-                      <input type="text" className="form-control" value={result.optMin} readOnly />
-                    </div>
-                    <div className="form-group">
-                      <label>Opt Max</label>
-                      <input type="text" className="form-control" value={result.optMax} readOnly />
-                    </div>
-                    <div className="form-group">
-                      <label>Result</label>
-                      <input type="text" className="form-control" value={result.result} readOnly />
-                    </div>
-                    <div className="form-group">
-                      <label>Age</label>
-                      <input type="text" className="form-control" value={result.age} readOnly />
-                    </div>
-                  </form>
-                ))}
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Close</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showAddModal && (
         <div className="modal show" style={{ display: 'block' }} aria-modal="true" role="dialog">

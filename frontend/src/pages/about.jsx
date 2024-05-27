@@ -1,35 +1,35 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { useLocation } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../assets/css/styles.css';
 import { useNavigate } from 'react-router-dom'
-import { useParams } from 'react-router-dom';
 
 function About() {
   const navigate = useNavigate();
-  const { masterId } = useParams();
+  const location = useLocation();
+  const [biomarkers, setBiomarkers] = useState([]);
+  const [groupDetails, setGroupDetails] = useState([]);
+
+  useEffect(() => {
+    if (location.state && location.state.biomarkers) {
+      setBiomarkers(location.state.biomarkers);
+    } else {
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    fetch('http://localhost:3000/GetAllGroupDetails')
+      .then(response => response.json())
+      .then(data => setGroupDetails(data));
+  }, []);
+
+  console.log(groupDetails, "groupDetails")
 
   const handleShowTable = () => {
     navigate('/')
   }
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(`http://localhost:3000/result-check/${masterId}`);
-        const data = await response.json();
-        setResultData(data);
-        setShowModal(true);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-  
-    fetchData();
-  }, [masterId]);
-
-
-  console.log(masterId, "Master Id")
 
   return (
     <div className="container mt-4" style={{ position: "relative" }}>
@@ -44,11 +44,11 @@ function About() {
         <div className="p-4">
           <div>
             <label htmlFor="" className="my-2 label-weight">Name:</label>
-            <p>SHIB</p>
+            <p>{biomarkers.biomarker}</p>
           </div>
           <div>
             <label htmlFor="" className="my-2 label-weight">Measurement:</label>
-            <p>SHIB</p>
+            <p>{biomarkers.measurementUnit}</p>
           </div>
           <div>
             <label htmlFor="" className="my-2 label-weight">Description:</label>
@@ -69,14 +69,14 @@ function About() {
                 <div className="col-sm-2"><strong>Optional Low</strong></div>
                 <div className="col-sm-2"><strong>Optional High</strong></div>
               </div>
-              {[1, 2, 3, 4].map((item, index) => (
+              {groupDetails.map((item, index) => (
                 <div key={index} className="row table-content-row">
-                  <div className="col-sm-1">{item}</div>
-                  <div className="col-sm-2">Biomarker {item}</div>
-                  <div className="col-sm-3">Unit {item}</div>
-                  <div className="col-sm-2">Category {item}</div>
-                  <div className="col-sm-2">Unit {item}</div>
-                  <div className="col-sm-2">Category {item}</div>
+                  <div className="col-sm-1">{item?.group}</div>
+                  <div className="col-sm-2">{item?.age}</div>
+                  <div className="col-sm-3">{item?.reference_low}</div>
+                  <div className="col-sm-2">{item?.reference_high}</div>
+                  <div className="col-sm-2">{item?.optimal_low}</div>
+                  <div className="col-sm-2">{item?.optimal_high}</div>
                 </div>
               ))}
             </div>
