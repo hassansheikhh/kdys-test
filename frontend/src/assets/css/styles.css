@@ -1,0 +1,102 @@
+.container.mt-4 {
+    margin-top: 1.5rem;
+}
+
+.text-center {
+    color: #4f6367;
+}
+
+.form-btn {
+    display: flex;
+    justify-content: end;
+}
+
+.col-sm-2.eye-icon {
+    cursor: pointer;
+}
+
+.header-row {
+    background-color: #4f6367;
+    color: white;
+    font-weight: 300;
+    text-align: center;
+    margin-bottom: 1rem;
+    padding: 1rem 0;
+}
+
+.content-row {
+    background-color: #b8d9d9;
+    display: flex;
+    align-items: center;
+    color: #4f6367;
+    margin-top: 1px;
+    font-weight: 400;
+    text-align: center;
+    padding: 0.5rem 0;
+}
+
+
+/* Back button styling */
+.back-button {
+    color: #4f6367;
+    top: 10px;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.text-center {
+    color: #4f6367;
+}
+
+.header-title {
+    font-weight: 600;
+}
+
+.content-container {
+    background-color: #b8d9d9;
+    border-radius: 10px;
+}
+
+.label-weight {
+    font-weight: 500;
+}
+
+.table-header-row {
+    background-color: #4f6367;
+    color: white;
+    font-weight: 300;
+    text-align: center;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    padding: 1rem 0;
+}
+
+.table-content-row {
+    background-color: white;
+    display: flex;
+    align-items: center;
+    color: #4f6367;
+    font-weight: 400;
+    text-align: center;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+    padding: 1rem 0;
+}
+
+.radius-container {
+    background-color: #b8d9d9;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.text-center .calories {
+    color: #efa41c !important;
+}
+
+.text-center .calories-desc {
+    width: 60%;
+    margin: 0 auto;
+}
