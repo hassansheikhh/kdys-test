@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const { v4: uuidv4 } = require('uuid'); // To generate unique IDs
+const { v4: uuidv4 } = require('uuid');
 const app = express();
 const port = 3000;
 
@@ -9,7 +9,6 @@ app.use(express.json());
 app.use(cors());
 
 const mongoURI = 'mongodb://localhost:27017';
-// const mongoURI = 'mongodb+srv://<username>:<password>@cluster0.mongodb.net/<dbname>?retryWrites=true&w=majority'; // for MongoDB Atlas
 
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
@@ -22,11 +21,6 @@ mongoose.connect(mongoURI, {
 
 const biomarkerSchema = new mongoose.Schema({
   biomarker: String,
-  masterId: {
-    type: String,
-    default: uuidv4,
-    unique: true
-  },
   measurementUnit: String,
   categories: String,
   result: String
@@ -41,14 +35,28 @@ const resultCheckSchema = new mongoose.Schema({
   optMin: String,
   optMax: String,
   result: String,
-  age: Number,
-  masterId: String
+  age: Number
 });
 
 const ResultCheck = mongoose.model('ResultCheck', resultCheckSchema);
 
-// Biomarker endpoints
-app.post('/biomarkers', async (req, res) => {
+const groupDetailSchema = new mongoose.Schema({
+  groupId: {
+    type: String,
+    unique: true
+  },
+  group: String,
+  age: Number,
+  reference_low: String,
+  reference_high: String,
+  optimal_low: String,
+  optimal_high: String
+});
+
+const GroupDetail = mongoose.model('GroupDetail', groupDetailSchema);
+
+
+app.post('/AddBiomarkers', async (req, res) => {
   try {
     const biomarker = new Biomarker(req.body);
     await biomarker.save();
@@ -58,7 +66,7 @@ app.post('/biomarkers', async (req, res) => {
   }
 });
 
-app.get('/biomarkers', async (req, res) => {
+app.get('/GetBiomarkers', async (req, res) => {
   try {
     const biomarkers = await Biomarker.find();
     res.status(200).send(biomarkers);
@@ -67,15 +75,15 @@ app.get('/biomarkers', async (req, res) => {
   }
 });
 
-app.put('/biomarkers/:id', async (req, res) => {
+app.get('/GetBiomarkersById/:id', async (req, res) => {
   try {
-    const biomarker = await Biomarker.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const biomarker = await Biomarker.findById(req.params.id);
     if (!biomarker) {
       return res.status(404).send();
     }
     res.send(biomarker);
   } catch (error) {
-    res.status(400).send(error);
+    res.status(500).send(error);
   }
 });
 
@@ -91,10 +99,9 @@ app.delete('/biomarkers/:id', async (req, res) => {
   }
 });
 
-// ResultCheck endpoints
 app.post('/result-check', async (req, res) => {
   try {
-    const { date, refMin, refMax, optMin, optMax, result, masterId } = req.body;
+    const { date, refMin, refMax, optMin, optMax, result } = req.body;
     const age = new Date().getFullYear() - new Date(date).getFullYear();
 
     const resultCheck = new ResultCheck({
@@ -104,8 +111,7 @@ app.post('/result-check', async (req, res) => {
       optMin,
       optMax,
       result,
-      age,
-      masterId
+      age
     });
 
     await resultCheck.save();
@@ -124,13 +130,13 @@ app.get('/result-check', async (req, res) => {
   }
 });
 
-app.get('/result-check/:masterId', async (req, res) => {
+app.get('/result-check/:id', async (req, res) => {
   try {
-    const resultChecks = await ResultCheck.find({ masterId: req.params.masterId });
-    if (!resultChecks) {
+    const resultCheck = await ResultCheck.findById(req.params.id);
+    if (!resultCheck) {
       return res.status(404).send();
     }
-    res.status(200).send(resultChecks);
+    res.status(200).send(resultCheck);
   } catch (error) {
     res.status(500).send(error);
   }
@@ -147,6 +153,38 @@ app.put('/result-check/:id', async (req, res) => {
     res.status(400).send(error);
   }
 });
+
+
+app.post('/AddGroupDetail', async (req, res) => {
+  try {
+    const { group, age, reference_low, reference_high, optimal_low, optimal_high } = req.body;
+    const groupId = uuidv4();
+    const groupDetail = new GroupDetail({
+      groupId,
+      group,
+      age,
+      reference_low,
+      reference_high,
+      optimal_low,
+      optimal_high
+    });
+
+    await groupDetail.save();
+    res.status(201).send({ groupDetail });
+  } catch (error) {
+    res.status(400).send(error);
+  }
+});
+app.get('/GetAllGroupDetails', async (req, res) => {
+  try {
+    const groupDetails = await GroupDetail.find();
+    res.status(200).send(groupDetails);
+  } catch (error) {
+    console.error('Error fetching group details:', error);
+    res.status(500).send('Error fetching group details');
+  }
+});
+
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
