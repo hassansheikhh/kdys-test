@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../assets/css/styles.css';
 import { useNavigate } from 'react-router-dom'
+import RangeSlider from './Slider';
 
 function About() {
   const navigate = useNavigate();

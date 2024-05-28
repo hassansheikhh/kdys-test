@@ -2,15 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import RangeSlider from './Slider';
 
 function Contact() {
+  const navigate = useNavigate();
   const { masterId } = useParams();
   const canvasRef = useRef(null);
   const [groupDetails, setGroupDetails] = useState([]);
+  const [resultsFromBiomaker, setResultsFromBiomaker] = useState([]);
   const [group, setGroup] = useState('');
+  const [biomarkerResult, setBiomarkerResult] = useState('');
   const [filteredData, setFilteredData] = useState([]);
 
   const [age, setAge] = useState('');
@@ -23,6 +27,13 @@ function Contact() {
     result: '',
     masterId: masterId,
   });
+  const results = [
+    { date: '2024-05-09', value: 11 },
+    { date: '2024-05-08', value: 45 },
+    { date: '2024-04-20', value: 78 },
+    { date: '2024-04-20', value: 5 },
+    { date: '2024-04-19', value: 55 },
+  ];
 
   useEffect(() => {
     fetch('http://localhost:3000/GetAllGroupDetails')
@@ -39,39 +50,68 @@ function Contact() {
 
   console.log(filteredData, "Filtered Data")
 
-  console.log(groupDetails, "groupDetails")
+
+  useEffect(() => {
+    const calculateBiomarkerResult = () => {
+      if (filteredData.length > 0) {
+        const selectedDetail = filteredData[0];
+        const { reference_low, reference_high, optimal_low, optimal_high } = selectedDetail;
+        const { refMin, refMax, optMin, optMax } = formData;
+        let result = '';
+        if (refMin >= reference_low && refMax <= reference_high) {
+          result = 'Normal';
+        } else if (refMin >= optimal_low && refMax <= optimal_high) {
+          result = 'Optimal';
+        } else {
+          result = 'Abnormal';
+        }
+        setBiomarkerResult(result);
+      }
+    };
+    calculateBiomarkerResult();
+  }, [filteredData, formData]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
 
-    const results = groupDetails.map(detail => {
+    // Clear the canvas before drawing
+    ctx.clearRect(0, 0, width, height);
+
+    const results = filteredData.map(detail => {
       const { reference_low, reference_high, optimal_high, optimal_low } = detail;
-      const refLow = parseInt(reference_low);
-      const refHigh = parseInt(reference_high);
-      const optHigh = parseInt(optimal_high);
-      const optLow = parseInt(optimal_low);
+      const refLow = parseInt(reference_low, 10);
+      const refHigh = parseInt(reference_high, 10);
+      const optHigh = parseInt(optimal_high, 10);
+      const optLow = parseInt(optimal_low, 10);
       return refLow + refHigh + optHigh + optLow;
     });
 
-    const dates = groupDetails.map(detail => detail.date);
+    console.log(results, "Result");
+
+    setResultsFromBiomaker(results);
+
+    if (results.length === 0) return;
+
+    const dates = filteredData.map(detail => detail.create_date);
 
     const maxResult = Math.max(...results);
     const increasedMaxResult = maxResult * 1.05;
 
     const colorRanges = [
-      { range: [0, 10], color: 'red' },
-      { range: [11, 20], color: 'yellow' },
-      { range: [21, 47], color: 'green' },
-      { range: [48, 57], color: 'yellow' },
-      { range: [58, increasedMaxResult], color: 'red' }
+      { range: [0, 10], color: '#fcd8d8' },
+      { range: [11, 20], color: '#fceac6' },
+      { range: [21, 47], color: '#d1e5d0' },
+      { range: [48, 57], color: '#fceac6' },
+      { range: [58, increasedMaxResult], color: '#fcd8d8' }
     ];
 
     ctx.fillStyle = 'rgba(211, 211, 211, 0.3)';
     ctx.fillRect(0, 0, width, height);
 
-    colorRanges.forEach(({ range, color }, index) => {
+    colorRanges.forEach(({ range, color }) => {
       const [start, end] = range;
       const startY = height - (end / increasedMaxResult) * height;
       const endY = height - (start / increasedMaxResult) * height;
@@ -86,8 +126,8 @@ function Contact() {
 
     ctx.beginPath();
     ctx.moveTo(0, height);
-    ctx.strokeStyle = 'white';
-    const interval = width / (results.length - 1);
+    ctx.strokeStyle = 'black';
+    const interval = results.length > 1 ? width / (results.length - 1) : width; // Adjust interval if only one data point
     const amplitude = 0;
     const frequency = 0.1;
     results.forEach((result, index) => {
@@ -101,7 +141,7 @@ function Contact() {
     results.forEach((result, index) => {
       const x = index * interval;
       const y = height - (result / increasedMaxResult) * height + amplitude * Math.sin(frequency * x);
-      const circleRadius = 5;
+      const circleRadius = 6;
 
       let circleColor = '';
       if (result >= 0 && result <= 10) circleColor = 'red';
@@ -115,19 +155,36 @@ function Contact() {
         ctx.beginPath();
         ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = 'black';
+        ctx.strokeStyle = 'transparent';
         ctx.lineWidth = 2;
         ctx.stroke();
       }
     });
 
+    const colorRangesY = [
+      { range: [0, 10], color: 'red', label: '0' },
+      { range: [11, 20], color: 'yellow', label: '10' },
+      { range: [21, 47], color: 'green', label: '20' },
+      { range: [48, 57], color: 'yellow', label: '47' },
+      { range: [58, increasedMaxResult], color: 'red', label: '57+' }
+    ];
+
+    colorRangesY.forEach(({ range, label }) => {
+      const [start, end] = range;
+      const startY = height - (end / increasedMaxResult) * height;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'black';
+      ctx.fillText(label, 2, startY + 10);
+    });
+
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = 'black';
+    const labelYPosition = height + 20; // Adjusted position for better visibility
     dates.forEach((date, index) => {
       const x = index * interval;
-      ctx.fillText(date, x, height + 20);
+      ctx.fillText(date, x, labelYPosition);
     });
-  }, [groupDetails]);
+  }, [filteredData]);
 
   const handleShowTable = () => {
     navigate('/')
@@ -136,6 +193,8 @@ function Contact() {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
+
+  console.log(resultsFromBiomaker)
 
 
   const handleSubmit = async (e) => {
@@ -218,10 +277,10 @@ function Contact() {
               {['reference_low', 'reference_high', 'optimal_low', 'optimal_high'].map((field, fieldIndex) => (
                 <div key={fieldIndex} className="w-100 d-flex">
                   <label
-                    className="mb-1 w-100 d-flex justify-content-center align-items-center"
-                    style={{ fontWeight: 'bold' }}
+                    className=" w-100 d-flex justify-content-center align-items-center"
+                    style={{ fontWeight: 'bold', fontSize: '14px', border: '2px solid #80898e', margin: "5px", padding: '10px', borderRadius: '5px', backgroundColor: '#b5e1ff' }}
                   >
-                    {field.charAt(0).toUpperCase() + field.slice(1)}
+                    {field.charAt(0).toUpperCase() + field.slice(1)}<span style={{ color: '#80898e' }}>{' <'} </span>
                   </label>
                   <input
                     type="text"
@@ -229,19 +288,68 @@ function Contact() {
                     value={data[field]}
                     disabled
                     onChange={(e) => handleInputChange(e, index)}
-                    className="form-control text-center"
+                    className="form-control text-center m-1"
                   />
                 </div>
               ))}
             </div>
           ))}
         </form>
+        {filteredData.length > 0 ?
+          <div className='col-md-12  d-flex justify-content-center'>
+            <div className='col-md-2 d-flex'>
+              <label
+                className="mb-1 w-100 d-flex justify-content-center align-items-center"
+                style={{ fontWeight: 'bold', fontSize: '14px', border: '2px solid #80898e', margin: "5px", padding: '10px', borderRadius: '5px', backgroundColor: '#b5e1ff' }}
+              >  Result <span style={{ color: '#80898e', fontWeight: 'bold' }}>{' <'} </span> </label>
+              <input
+                type="text"
+                name="result"
+                value=""
+                disabled
+                onChange={(e) => handleInputChange(e, index)}
+                className="form-control text-center m-1"
+              />
+            </div>
+          </div>
+          : null}
+
       </div>
 
-      <div className="container radius-container mt-4">
-        <div className="m-3">
-          {/* <h1>Custom Chart</h1> */}
-          <canvas ref={canvasRef} width={700} height={400} style={{ border: '1px solid black' }} />
+      <div className="container radius-container mt-4 col-md-12">
+        <div className='custom-con'>
+
+          <div className='d-flex justify-content-space-between col-md-12 custom-con '>
+            <div className=''>
+              <h2 className='biomaker-heading'>SHBG</h2>
+              <p className='biomaker-paragraph'>Lorem ipsum dolor sit amet consectetur adipisicing elit. Autem, tenetur dicta? Ab repellendus sed beatae excepturi ea laborum ex officiis, molestias consequuntur laudantium corrupti minima pariatur aliquid necessitatibus consectetur cum!</p>
+            </div>
+            <div className='col-md-6'>
+              <RangeSlider resultsFromBiomaker={resultsFromBiomaker} />
+            </div>
+          </div>
+          <div className='d-flex col-md-12'>
+            <div className=" m-3 col-md-6">
+              <canvas ref={canvasRef} width={500} height={250} style={{ border: '1px solid black' }} />
+            </div>
+            <div className='col-md-6'>
+              <div className="container w-50">
+                <div className="text-center mb-4">
+                  <h5 className="text-muted">Result History</h5>
+                </div>
+                <table className="table table-borderless">
+                  <tbody>
+                    {results.map((result, index) => (
+                      <tr key={index}>
+                        <td>{result.date}</td>
+                        <td className="text-primary text-end">{result.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>
