@@ -35,7 +35,7 @@ const resultCheckSchema = new mongoose.Schema({
   optMin: String,
   optMax: String,
   result: String,
-  age: Number
+  age: String
 });
 
 const ResultCheck = mongoose.model('ResultCheck', resultCheckSchema);
@@ -46,9 +46,10 @@ const groupDetailSchema = new mongoose.Schema({
     unique: true
   },
   group: String,
-  age: Number,
+  age: String,
   reference_low: String,
   reference_high: String,
+  create_date: String,
   optimal_low: String,
   optimal_high: String
 });
@@ -157,13 +158,14 @@ app.put('/result-check/:id', async (req, res) => {
 
 app.post('/AddGroupDetail', async (req, res) => {
   try {
-    const { group, age, reference_low, reference_high, optimal_low, optimal_high } = req.body;
+    const { group, age, reference_low, reference_high, optimal_low, optimal_high, create_date } = req.body;
     const groupId = uuidv4();
     const groupDetail = new GroupDetail({
       groupId,
       group,
-      age,
+      age: String(age),
       reference_low,
+      create_date,
       reference_high,
       optimal_low,
       optimal_high
@@ -175,6 +177,7 @@ app.post('/AddGroupDetail', async (req, res) => {
     res.status(400).send(error);
   }
 });
+
 app.get('/GetAllGroupDetails', async (req, res) => {
   try {
     const groupDetails = await GroupDetail.find();

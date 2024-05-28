@@ -10,7 +10,10 @@ function Contact() {
   const { masterId } = useParams();
   const canvasRef = useRef(null);
   const [groupDetails, setGroupDetails] = useState([]);
+  const [group, setGroup] = useState('');
+  const [filteredData, setFilteredData] = useState([]);
 
+  const [age, setAge] = useState('');
   const [startDate, setStartDate] = useState(new Date());
   const [formData, setFormData] = useState({
     refMin: '',
@@ -27,6 +30,14 @@ function Contact() {
       .then(data => setGroupDetails(data));
   }, []);
 
+  useEffect(() => {
+    const filtered = groupDetails.filter(detail => {
+      return detail.group === group && detail.age === age;
+    });
+    setFilteredData(filtered);
+  }, [group, age, groupDetails]);
+
+  console.log(filteredData, "Filtered Data")
 
   console.log(groupDetails, "groupDetails")
   useEffect(() => {
@@ -35,7 +46,6 @@ function Contact() {
     const width = canvas.width;
     const height = canvas.height;
 
-    // Calculate results based on groupDetails
     const results = groupDetails.map(detail => {
       const { reference_low, reference_high, optimal_high, optimal_low } = detail;
       const refLow = parseInt(reference_low);
@@ -45,19 +55,17 @@ function Contact() {
       return refLow + refHigh + optHigh + optLow;
     });
 
-    // Calculate the maximum value in the results array
-    const maxResult = Math.max(...results);
+    const dates = groupDetails.map(detail => detail.date);
 
-    // Increase the maximum value by 5%
+    const maxResult = Math.max(...results);
     const increasedMaxResult = maxResult * 1.05;
 
-    // Adjust the color range to accommodate the increased maximum value
     const colorRanges = [
       { range: [0, 10], color: 'red' },
       { range: [11, 20], color: 'yellow' },
       { range: [21, 47], color: 'green' },
       { range: [48, 57], color: 'yellow' },
-      { range: [58, increasedMaxResult], color: 'red' } // Adjusted to increasedMaxResult
+      { range: [58, increasedMaxResult], color: 'red' }
     ];
 
     ctx.fillStyle = 'rgba(211, 211, 211, 0.3)';
@@ -72,8 +80,8 @@ function Contact() {
       ctx.fillRect(0, startY, width, endY - startY);
 
       ctx.fillStyle = 'white';
-      ctx.textAlign = 'left';
-      ctx.fillText(`${start}-${end}`, 0, startY + 15 * (index + 1));
+      ctx.textAlign = 'right';
+      ctx.fillText(`${start}-${end}`, -5, startY + 15);
     });
 
     ctx.beginPath();
@@ -88,71 +96,38 @@ function Contact() {
       ctx.lineTo(x, y);
     });
 
-    // Draw the line graph after defining its path
     ctx.stroke();
 
-    // Draw yellow circles on the line where the value falls in the range of 11 to 20
     results.forEach((result, index) => {
       const x = index * interval;
       const y = height - (result / increasedMaxResult) * height + amplitude * Math.sin(frequency * x);
+      const circleRadius = 5;
 
-      if (result >= 0 && result <= 10) {
-        ctx.fillStyle = 'red';
-        const circleRadius = 5;
+      let circleColor = '';
+      if (result >= 0 && result <= 10) circleColor = 'red';
+      if (result >= 11 && result <= 20) circleColor = 'yellow';
+      if (result >= 21 && result <= 47) circleColor = 'green';
+      if (result >= 48 && result <= 57) circleColor = 'yellow';
+      if (result >= 58) circleColor = 'red';
+
+      if (circleColor) {
+        ctx.fillStyle = circleColor;
         ctx.beginPath();
         ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = 'black'; // Border color
-        ctx.lineWidth = 2; // Border width
-        ctx.stroke();
-      }
-      if (result >= 11 && result <= 20) {
-        ctx.fillStyle = 'yellow';
-        const circleRadius = 5;
-        
-        ctx.beginPath();
-        ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'black'; // Border color
-        ctx.lineWidth = 2; // Border width
-        ctx.stroke();
-      }
-      if (result >= 21 && result <= 47) {
-        ctx.fillStyle = 'green';
-        const circleRadius = 5;
-        ctx.beginPath();
-        ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'black'; 
-        ctx.lineWidth = 2; 
-        ctx.stroke();
-      }
-      if (result >= 47 && result <= 57) {
-        ctx.fillStyle = 'yellow';
-        const circleRadius = 5;
-        ctx.beginPath();
-        ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'black'; 
-        ctx.lineWidth = 2; 
-        ctx.stroke();
-      }
-      if (result >= 47 ) {
-        ctx.fillStyle = 'red';
-        const circleRadius = 5;
-        ctx.beginPath();
-        ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'black'; 
-        ctx.lineWidth = 2; 
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
         ctx.stroke();
       }
     });
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'white';
+    dates.forEach((date, index) => {
+      const x = index * interval;
+      ctx.fillText(date, x, height + 20);
+    });
   }, [groupDetails]);
-
-
-
-
 
   const handleShowTable = () => {
     navigate('/')
@@ -188,44 +163,78 @@ function Contact() {
   return (
     <>
 
-      <div className="container mt-4 radius-container">
+      <div className="container position-relative mt-4">
         <div className="back-button" onClick={handleShowTable}>
           <FontAwesomeIcon icon={faArrowLeft} style={{ marginRight: '10px' }} />
           <span style={{ fontWeight: "700" }}>Back</span>
         </div>
+      </div>
+      <div className="text-center mb-4">
+        <h1>Biomakers</h1>
+      </div>
+      <div className="container mt-4  radius-container">
         <div className="text-center mb-4">
           <h2>Test Result</h2>
         </div>
-        <div className="d-flex justify-content-center mb-4">
-          <DatePicker
-            selected={startDate}
-            onChange={(date) => setStartDate(date)}
-            className="form-control"
-          />
+        <div className="row justify-content-center mb-4">
+          <div className="col-md-2">
+            <select
+              value={group}
+              onChange={(e) => setGroup(e.target.value)}
+              className="form-control mx-2"
+            >
+              <option value="">Select Group</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div className="col-md-2">
+            <select
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              className="form-control"
+            >
+              <option value="">Select Age</option>
+              <option value="0-18">0-18</option>
+              <option value="19-49">19-49</option>
+              <option value="50+">50+</option>
+            </select>
+          </div>
+          <div className="col-md-2">
+            <DatePicker
+              selected={startDate}
+              onChange={(date) => setStartDate(date)}
+              className="form-control"
+            />
+          </div>
         </div>
         <div className='text-center my-4'>
           <h3>Calories Burned<span className='calories'> 1500 calories</span></h3>
           <p className='calories-desc '>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Eius, facilis asperiores ut eveniet porro, dignissimos praesentium numquam magnam reprehenderit nihil iste et repudiandae eaque sapiente explicabo nemo assumenda ullam obcaecati!</p>
         </div>
         <form onSubmit={handleSubmit} className="d-flex flex-row align-items-center">
-          {['refMin', 'refMax', 'optMin', 'optMax', 'result'].map((field, index) => (
-            <div key={index} className="mb-3 w-50 d-flex">
-              <label
-                className="d-flex text-center mb-1 w-100"
-                style={{ fontWeight: 'bold' }}
-              >
-                {field.charAt(0).toUpperCase() + field.slice(1)}
-              </label>
-              <input
-                type="text"
-                name={field}
-                value={formData[field]}
-                onChange={handleInputChange}
-                className="form-control text-center"
-              />
+          {filteredData.map((data, index) => (
+            <div key={index} className="mb-3 w-100 d-flex">
+              {['reference_low', 'reference_high', 'optimal_low', 'optimal_high'].map((field, fieldIndex) => (
+                <div key={fieldIndex} className="w-100 d-flex">
+                  <label
+                    className="mb-1 w-100 d-flex justify-content-center align-items-center"
+                    style={{ fontWeight: 'bold' }}
+                  >
+                    {field.charAt(0).toUpperCase() + field.slice(1)}
+                  </label>
+                  <input
+                    type="text"
+                    name={field}
+                    value={data[field]}
+                    disabled
+                    onChange={(e) => handleInputChange(e, index)}
+                    className="form-control text-center"
+                  />
+                </div>
+              ))}
             </div>
           ))}
-          {/* <button type="submit" className="btn btn-primary">Submit</button> */}
         </form>
       </div>
 
